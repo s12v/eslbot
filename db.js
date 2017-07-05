@@ -3,7 +3,6 @@
 const Connection = require('tedious').Connection;
 const Request = require('tedious').Request;
 const TYPES = require('tedious').TYPES;
-let connection = null;
 
 const config = {
     userName: process.env.DB_USER,
@@ -17,41 +16,41 @@ const config = {
     }
 };
 
-const withConnection = function (func) {
-    return new Promise((resolve, reject) => {
-        connect()
-            .then(func)
-            .then(result => resolve(result))
-            .catch(e => {
-                console.log(e);
-                reject(e)
-            })
-            .then(() => {
-                    console.log('Closing connection');
-                    connection.close()
-                }
-            );
-    });
+let connection = null;
+
+module.exports.shutdown = function () {
+    if (connection !== null) {
+        console.log('close connection');
+        connection.close();
+        connection = null;
+    }
 };
 
 module.exports.getWord = function (word) {
-    let selectAsync = () => selectFirst(
+    return connect().then(() => selectFirst(
         'select * from words where word = @word',
         {
             word: word
         }
-    );
-
-    return withConnection(selectAsync);
+    ));
 };
 
-module.exports.ensureUser = function(userId, level) {
-    let selectAsync = () => selectFirst(
+module.exports.findUser = function(userId) {
+    return connect().then(() => selectFirst(
         'select * from users where id = @id',
         {
             id: userId
         }
-    ).then((user) => {
+    ));
+};
+
+module.exports.ensureUser = function(userId, level) {
+    return connect().then(() => selectFirst(
+        'select * from users where id = @id',
+        {
+            id: userId
+        }
+    )).then((user) => {
         console.log(`User found: ${JSON.stringify(user)}`);
         if (user === null) {
             return insert(
@@ -63,29 +62,29 @@ module.exports.ensureUser = function(userId, level) {
             )
         }
     });
-
-    return withConnection(selectAsync);
 };
 
 module.exports.getRandomWord = function (userId, difficultyLevel) {
-    let selectAsync = () => selectFirst(
+    return connect().then(() => selectFirst(
         'select * from words where id = 65977',
         {
         }
-    );
-
-    return withConnection(selectAsync);
+    ));
 };
 
 function connect() {
     return new Promise(function (resolve, reject) {
-        console.log('Connecting...');
-        connection = new Connection(config);
-        connection.on('connect', function (err) {
-            console.log('on connect');
-            if (err) reject(err);
-            else     resolve();
-        });
+        if (connection === null) {
+            console.log('Connecting...');
+            connection = new Connection(config);
+            connection.on('connect', function (err) {
+                console.log('on connect');
+                if (err) reject(err);
+                else     resolve();
+            });
+        } else {
+            resolve();
+        }
     })
 }
 

@@ -7,7 +7,6 @@ const BotName = 'DictBot';
 const levels = ['Beginner', 'Intermediate', 'Advanced'];
 
 function learnValidate(intentRequest, callback) {
-    // TODO check user
     if (intentRequest.currentIntent.slots['Level'] && levels.includes(intentRequest.currentIntent.slots['Level'])) {
         db.ensureUser(intentRequest.userId, levels.indexOf(intentRequest.currentIntent.slots['Level']))
             .then(() => callback(
@@ -40,37 +39,46 @@ function learnValidate(intentRequest, callback) {
 }
 
 function learn(intentRequest, callback) {
-    if (intentRequest.invocationSource === 'DialogCodeHook') {
-        learnValidate(intentRequest, callback);
-    } else {
-        db
-            .getRandomWord(intentRequest.userId, intentRequest.currentIntent.slots['Level'])
-            .then(row => wordData(row))
-            .then(data => callback(
-                lexResponses.close(
-                    {
-                        options: JSON.stringify([
+    db.findUser(intentRequest.userId)
+        .then(user => {
+            console.log(`User found: ${JSON.stringify(user)}`);
+            if (user === null) {
+
+                // TODO make it more efficient
+
+                learnValidate(intentRequest, callback);
+            } else {
+                db
+                    .getRandomWord(user)
+                    .then(row => wordData(row))
+                    .then(data => callback(
+                        lexResponses.close(
                             {
-                                text: 'Continue',
-                                value: 'Continue'
+                                options: JSON.stringify([
+                                    {
+                                        text: 'Continue',
+                                        value: 'Continue'
+                                    },
+                                    {
+                                        text: 'Stop',
+                                        value: 'Stop'
+                                    }
+                                ]),
+                                word: data.word,
+                                image: data.image,
+                                audio: data.audio
                             },
+                            'Fulfilled',
                             {
-                                text: 'Stop',
-                                value: 'Stop'
+                                contentType: 'PlainText',
+                                content: data.definition
                             }
-                        ]),
-                        word: data.word,
-                        image: data.image,
-                        audio: data.audio
-                    },
-                    'Fulfilled',
-                    {
-                        contentType: 'PlainText',
-                        content: data.definition
-                    }
-                )
-            ));
-    }
+                        )
+                    ));
+                }
+            }
+        );
+            // if (intentRequest.invocationSource === 'DialogCodeHook') {
 }
 
 function defineWord(intentRequest, callback) {
@@ -136,8 +144,9 @@ function dispatch(intentRequest, callback) {
     throw new Error(`Intent with name ${name} not supported`);
 }
 
-function loggingCallback(response, originalCallback) {
+function callbackWrapper(response, originalCallback) {
     console.log(JSON.stringify(response, null, 2));
+    db.shutdown();
     originalCallback(null, response);
 }
 
@@ -147,7 +156,7 @@ exports.handler = (event, context, callback) => {
         if (event.bot.name !== BotName) {
             callback(`Invalid bot name: ${event.bot.name}`);
         }
-        dispatch(event, (response) => loggingCallback(response, callback));
+        dispatch(event, (response) => callbackWrapper(response, callback));
     } catch (err) {
         callback(err);
     }
