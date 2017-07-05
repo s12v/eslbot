@@ -54,7 +54,13 @@ module.exports.ensureUser = function(userId, level) {
     ).then((user) => {
         console.log(`User found: ${JSON.stringify(user)}`);
         if (user === null) {
-            return insert(`insert into users (id, level) values (${userId}, ${level})`)
+            return insert(
+                `insert into users (id, level) values (@id, @level)`,
+                {
+                    id: userId,
+                    level: level
+                }
+            )
         }
     });
 
@@ -62,7 +68,13 @@ module.exports.ensureUser = function(userId, level) {
 };
 
 module.exports.getRandomWord = function (userId, difficultyLevel) {
-    // TODO implement
+    let selectAsync = () => selectFirst(
+        'select * from words where id = 65977',
+        {
+        }
+    );
+
+    return withConnection(selectAsync);
 };
 
 function connect() {
@@ -113,7 +125,7 @@ function select(query, params) {
     });
 }
 
-function insert(sql) {
+function insert(sql, params) {
     return new Promise(function(resolve, reject) {
         const request = new Request(
             sql,
@@ -122,12 +134,18 @@ function insert(sql) {
                     console.log(err);
                     console.log(sql);
                     reject()
-                } else{
+                } else {
                     console.log(rowCount + ' row(s) inserted');
                     resolve();
                 }
             }
         );
+
+        for (let key of Object.keys(params)) {
+            const type = Number.isInteger(params[key]) ? TYPES.Int : TYPES.VarChar;
+            request.addParameter(key, type, params[key]);
+        }
+
         connection.execSql(request);
     })
 }

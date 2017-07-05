@@ -60,12 +60,18 @@ function processMessage(message) {
         return lexApi
             .send(message.sender.id, message.message.text)
             .then(lexResult => {
-
-                // TODO process Lex result
-
                 console.log(`Lex response: ${JSON.stringify(lexResult)}`);
-                let promises = [];
                 let session = lexResult.sessionAttributes ? lexResult.sessionAttributes : {};
+                let p = Promise.resolve(1);
+                if (session.word) {
+                    p = p.then(() => facebookApi.sendText(message.sender.id, session.word));
+                }
+                if (session.audio) {
+                    p = p.then(() => facebookApi.sendAudio(message.sender.id, lexResult.sessionAttributes.audio));
+                }
+                if (session.image) {
+                    p = p.then(() => facebookApi.sendImage(message.sender.id, lexResult.sessionAttributes.image));
+                }
                 if (lexResult.message) {
                     let quickReplies = null;
                     if (session.options) {
@@ -77,16 +83,10 @@ function processMessage(message) {
                             }
                         });
                     }
-                    promises.push(facebookApi.sendText(message.sender.id, lexResult.message, quickReplies));
-                }
-                if (session.image) {
-                    promises.push(facebookApi.sendImage(message.sender.id, lexResult.sessionAttributes.image));
-                }
-                if (session.audio) {
-                    promises.push(facebookApi.sendAudio(message.sender.id, lexResult.sessionAttributes.audio));
+                    p = p.then(() => facebookApi.sendText(message.sender.id, lexResult.message, quickReplies));
                 }
 
-                return Promise.all(promises);
+                return p;
             })
             .catch(err => console.log(err))
         ;

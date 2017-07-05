@@ -7,6 +7,7 @@ const BotName = 'DictBot';
 const levels = ['Beginner', 'Intermediate', 'Advanced'];
 
 function learnValidate(intentRequest, callback) {
+    // TODO check user
     if (intentRequest.currentIntent.slots['Level'] && levels.includes(intentRequest.currentIntent.slots['Level'])) {
         db.ensureUser(intentRequest.userId, levels.indexOf(intentRequest.currentIntent.slots['Level']))
             .then(() => callback(
@@ -44,13 +45,28 @@ function learn(intentRequest, callback) {
     } else {
         db
             .getRandomWord(intentRequest.userId, intentRequest.currentIntent.slots['Level'])
-            .then(row => callback(
+            .then(row => wordData(row))
+            .then(data => callback(
                 lexResponses.close(
-                    {},
+                    {
+                        options: JSON.stringify([
+                            {
+                                text: 'Continue',
+                                value: 'Continue'
+                            },
+                            {
+                                text: 'Stop',
+                                value: 'Stop'
+                            }
+                        ]),
+                        word: data.word,
+                        image: data.image,
+                        audio: data.audio
+                    },
                     'Fulfilled',
                     {
                         contentType: 'PlainText',
-                        content: "boom"
+                        content: data.definition
                     }
                 )
             ));
@@ -61,15 +77,18 @@ function defineWord(intentRequest, callback) {
     const word = intentRequest.currentIntent.slots['Word'];
     db
         .getWord(word)
-        .then(row => {
-                let data = wordData(row);
+        .then(row => wordData(row))
+        .then(data => {
                 return callback(
                     lexResponses.close(
-                        data,
+                        {
+                            image: data.image,
+                            audio: data.audio
+                        },
                         'Fulfilled',
                         {
                             contentType: 'PlainText',
-                            content: data.text ? data.text : "I don't know this word"
+                            content: data.definition ? data.definition : "I don't know this word"
                         }
                     )
                 )
@@ -91,21 +110,17 @@ function about(intentRequest, callback) {
 }
 
 function wordData(row) {
-    let definition = null;
-    let image = null;
-    let audio = null;
     if (row) {
         let data = JSON.parse(row.json);
         console.log(`DB data: ${row.json}`);
-        definition = data.definition.text;
-        image = data.images && data.images.length > 0 ? data.images[0].url : null;
-        audio = data.soundUrl;
-    }
-
-    return {
-        text: definition,
-        image: image ? `http:${image}` : null,
-        audio: audio ? `http:${audio}` : null
+        return {
+            word: row.word,
+            definition: data.definition.text,
+            image: data.images && data.images.length > 0 ? `http:${data.images[0].url}` : null,
+            audio: data.soundUrl ? `http:${data.soundUrl}` : null
+        };
+    } else {
+        return {}
     }
 }
 
