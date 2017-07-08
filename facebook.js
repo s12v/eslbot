@@ -61,7 +61,8 @@ function processMessage(message) {
             .send(message.sender.id, message.message.text)
             .then(lexResult => {
                 console.log(`Lex response: ${JSON.stringify(lexResult)}`);
-                let session = lexResult.sessionAttributes ? lexResult.sessionAttributes : {};
+                let session = lexResult.sessionAttributes && lexResult.dialogState !== 'ElicitIntent'
+                    ? lexResult.sessionAttributes : {};
                 let p = Promise.resolve(1);
                 if (session.word) {
                     p = p.then(() => facebookApi.sendText(message.sender.id, session.word));
