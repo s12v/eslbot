@@ -1,0 +1,10 @@
+Resources:
+  PollyCacheBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+Outputs:
+  PollyCacheBucket:
+    Description: S3 Polly cache bucket ARN
+    Value: !GetAtt [PollyCacheBucket, Arn]
+    Export:
+      Name: 'dictbot-s3-polly-cache-bucket'

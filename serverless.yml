@@ -18,6 +18,7 @@ package:
     - '.*'
     - '*.iml'
     - 'env.yml*'
+    - 'cloudformation/*'
     - 'data/*'
     - 'utils/*'
 
@@ -41,3 +42,6 @@ functions:
     description: Lex handler
     memorySize: 128
     timeout: 30
+    environment:
+      POLLY_CACHE_S3_ARN:
+        'Fn::ImportValue': 'dictbot-s3-polly-cache-bucket'
