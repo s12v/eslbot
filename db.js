@@ -53,7 +53,7 @@ module.exports.ensureUser = function(userId, level) {
     )).then((user) => {
         console.log(`User found: ${JSON.stringify(user)}`);
         if (user === null) {
-            return insert(
+            return execute(
                 `insert into users (id, level) values (@id, @level)`,
                 {
                     id: userId,
@@ -72,6 +72,24 @@ module.exports.getRandomWord = function (userId, difficultyLevel) {
     ));
 };
 
+module.exports.recordProgress = function (userId, wordId) {
+    return connect()
+        .then(() => {
+            let sql =
+                `begin tran
+                    update progress set repeat_count = repeat_count + 1, updated_at = GETUTCDATE() where user_id = @userId and word_id = @wordId
+                    if @@rowcount = 0
+                    begin
+                        insert into progress (user_id, word_id, repeat_count, next_repeat) values (@userId, @wordId, 1, DATEADD(week, 2, GETUTCDATE()))
+                    end
+                commit tran`;
+            return execute(sql, {
+                userId: userId,
+                wordId: wordId
+            });
+        });
+};
+
 function connect() {
     return new Promise(function (resolve, reject) {
         if (connection === null) {
@@ -83,25 +101,28 @@ function connect() {
                 else     resolve();
             });
         } else {
+            console.log('Already connected');
             resolve();
         }
     })
 }
 
 function selectFirst(query, params) {
-    return select(query, params)
+    return execute(query, params)
         .then(rows => rows[0] ? rows[0] : null)
 }
 
-function select(query, params) {
+function execute(query, params) {
     return new Promise((resolve, reject) => {
-        console.log('Reading rows from the Table...');
+        console.log(`Running ${query}`);
         let request = new Request(
             query,
             function (err, rowCount, rows) {
                 if (err) {
+                    console.log(`DB error: ${err}`);
                     reject(err);
                 } else {
+                    console.log(`row count: ${rowCount}`);
                     resolve(
                         rows.map(row => {
                             let r = {};
@@ -122,29 +143,4 @@ function select(query, params) {
 
         connection.execSql(request);
     });
-}
-
-function insert(sql, params) {
-    return new Promise(function(resolve, reject) {
-        const request = new Request(
-            sql,
-            function(err, rowCount) {
-                if (err) {
-                    console.log(err);
-                    console.log(sql);
-                    reject()
-                } else {
-                    console.log(rowCount + ' row(s) inserted');
-                    resolve();
-                }
-            }
-        );
-
-        for (let key of Object.keys(params)) {
-            const type = Number.isInteger(params[key]) ? TYPES.Int : TYPES.VarChar;
-            request.addParameter(key, type, params[key]);
-        }
-
-        connection.execSql(request);
-    })
 }

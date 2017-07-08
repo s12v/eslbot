@@ -42,7 +42,12 @@ function learnFulfill(user, callback) {
     db
         .getRandomWord(user)
         .then(row => wordData(row))
-        .then(data => callback(
+        .then(word =>
+            db
+                .recordProgress(user.id, word.id)
+                .then(() => word)
+        )
+        .then(word => callback(
             lexResponses.close(
                 {
                     options: JSON.stringify([
@@ -55,14 +60,14 @@ function learnFulfill(user, callback) {
                             value: 'Stop'
                         }
                     ]),
-                    word: data.word,
-                    image: data.image,
-                    audio: data.audio
+                    word: word.word,
+                    image: word.image,
+                    audio: word.audio
                 },
                 'Fulfilled',
                 {
                     contentType: 'PlainText',
-                    content: data.definition
+                    content: word.definition
                 }
             )
         ));
@@ -122,6 +127,7 @@ function wordData(row) {
         let data = JSON.parse(row.json);
         console.log(`DB data: ${row.json}`);
         return {
+            id: row.id,
             word: row.word,
             definition: data.definition.text,
             image: data.images && data.images.length > 0 ? `http:${data.images[0].url}` : null,
