@@ -44,4 +44,4 @@ functions:
     timeout: 30
     environment:
       POLLY_CACHE_S3_ARN:
-        'Fn::ImportValue': 'dictbot-s3-polly-cache-bucket'
+        'Fn::ImportValue': dictbot-s3-polly-cache-bucket
