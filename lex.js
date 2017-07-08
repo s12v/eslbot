@@ -109,14 +109,42 @@ function defineWord(intentRequest, callback) {
         );
 }
 
-function about(intentRequest, callback) {
+function about(callback) {
+    callback(
+        lexResponses.close(
+            {
+                options: JSON.stringify([
+                    {
+                        text: 'Start',
+                        value: 'Start'
+                    },
+                    {
+                        text: 'Test',
+                        value: 'Test'
+                    }
+                ])
+            },
+            'Fulfilled',
+            {
+                contentType: 'PlainText',
+                content: `Hi! Type "start" to learn new words, "test" to test your knowledge`
+            }
+        )
+    );
+}
+
+function stop(callback) {
     callback(
         lexResponses.close(
             {},
             'Fulfilled',
             {
                 contentType: 'PlainText',
-                content: `Hi hi!`
+                content: [
+                    'See you later!',
+                    'Good-bye',
+                    'Bye'
+                ][Math.floor(Math.random() * 3)]
             }
         )
     );
@@ -141,7 +169,9 @@ function wordData(row) {
 function dispatch(intentRequest, callback) {
     const name = intentRequest.currentIntent.name;
     if (name === 'DictAbout') {
-        return about(intentRequest, callback);
+        return about(callback);
+    } else if (name === 'DictStop') {
+        return stop(callback);
     } else if (name === 'DefineWord') {
         return defineWord(intentRequest, callback);
     } else if (name === 'DictLearn') {
