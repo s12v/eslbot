@@ -4,6 +4,11 @@ const lexResponses = require('lex-responses');
 const db = require('db');
 
 
+// TODO max number of attempts
+// TODO voice input
+// TODO first name
+// TODO ./ffmpeg -i audioclip-1499559551000-1664.mp4 -ar 16000 -ac 1 output.wav
+
 exports.handle = function (intentRequest, callback) {
     db.findUser(intentRequest.userId)
         .then(user => {
@@ -83,7 +88,8 @@ function giveTask(word, intentRequest, callback) {
 function handleTestIntent(user, intentRequest, callback) {
     console.log("handleTestIntent: " + JSON.stringify(intentRequest));
     if (intentRequest.currentIntent.slots['Word']) {
-        if (intentRequest.sessionAttributes.secretWord === intentRequest.currentIntent.slots['Word']) {
+        if (intentRequest.sessionAttributes.secretWord.toLowerCase() ===
+            intentRequest.currentIntent.slots['Word'].toLowerCase()) {
             correctAnswer(callback);
         } else {
             wrongAnswer(callback, intentRequest);
