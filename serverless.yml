@@ -9,8 +9,9 @@ provider:
   iamRoleStatements:
     - Effect: "Allow"
       Action:
-       - "lex:PostContent"
-       - "lex:PostText"
+#       - "lex:PostContent"
+#       - "lex:PostText"
+       - "lex:*"
       Resource: "*"
 
 package:
@@ -45,3 +46,8 @@ functions:
     environment:
       POLLY_CACHE_S3_ARN:
         'Fn::ImportValue': dictbot-s3-polly-cache-bucket
+  init-slot:
+    handler: init.slot
+    description: Initialize slot for LEX
+    memorySize: 1024
+    timeout: 300

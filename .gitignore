@@ -2,5 +2,6 @@
 /.idea
 /.serverless
 /*.iml
+/bin/*
 /data
 /node_modules

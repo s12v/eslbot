@@ -72,6 +72,13 @@ module.exports.getRandomWord = function (userId, difficultyLevel) {
         )).then(row => wordData(row));
 };
 
+module.exports.getAllWords = function () {
+    return connect()
+        .then(() => execute(
+            'select top 10000 word from words order by difficulty_level asc',
+            {}
+        ));
+};
 
 function wordData(row) {
     if (row) {

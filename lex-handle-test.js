@@ -51,6 +51,11 @@ function correctAnswer(callback) {
 }
 
 function wrongAnswer(callback, intentRequest) {
+
+    let message = intentRequest.inputTranscript
+        ? `Your input: ${intentRequest.inputTranscript}. Wrong! Try again`
+        : 'Nope. Try again!';
+
     callback(
         lexResponses.elicitSlot(
             {
@@ -61,7 +66,7 @@ function wrongAnswer(callback, intentRequest) {
             'Word',
             {
                 contentType: 'PlainText',
-                content: 'Nope. Try again!'
+                content: message
             }
         )
     )

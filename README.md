@@ -30,10 +30,9 @@ You can ask the bot to define a word.
  
 ## Development
 
-The bot is built using node.js and Serverless framework
- 
 ### Deployment
 
-You will need database (see `ddl/*`) and API credentials (`see .env.yml.dist`).
-Deploy `cloudformation/*` first and follow with `serverless deploy`.
-
+ * Download ffmpeg static x64 binaries from https://www.johnvansickle.com/ffmpeg/, put `ffmpeg` to `bin`
+ * You will need database (see `ddl/*`) and Facebook access details (`see .env.yml.dist`).
+ * Deploy `cloudformation/*`
+ * Deploy functions with `serverless deploy`
