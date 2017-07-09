@@ -2,95 +2,51 @@
 
 const lexResponses = require('lex-responses');
 const db = require('db');
-const BotName = 'DictBot';
+const lexLearnHandler = require('lex-handle-learn');
+const lexTestHandler = require('lex-handle-test');
 
-const levels = ['Beginner', 'Intermediate', 'Advanced'];
+const BotName = process.env.BOT_NAME;
 
-function learnValidate(intentRequest, callback) {
-    if (intentRequest.currentIntent.slots['Level'] && levels.includes(intentRequest.currentIntent.slots['Level'])) {
-        db.ensureUser(intentRequest.userId, levels.indexOf(intentRequest.currentIntent.slots['Level']))
-            .then(() => callback(
-                lexResponses.delegate(
-                    {},
-                    intentRequest.currentIntent.slots
-                )
-            ));
-    } else {
-        callback(
-            lexResponses.elicitSlot(
-                {
-                    options: JSON.stringify(levels.map(level => {
-                        return {
-                            text: level,
-                            value: level
-                        };
-                    }))
-                },
-                intentRequest.currentIntent.name,
-                intentRequest.currentIntent.slots,
-                'Level',
-                {
-                    contentType: 'PlainText',
-                    content: 'What is your English level?'
-                }
-            )
-        )
+
+
+exports.handler = (event, context, callback) => {
+    console.log(`event: ${JSON.stringify(event)}`);
+    try {
+        if (event.bot.name !== BotName) {
+            callback(`Invalid bot name: ${event.bot.name}`);
+        }
+        dispatch(event, (response) => callbackWrapper(response, callback));
+    } catch (err) {
+        callback(err);
     }
+};
+
+function dispatch(intentRequest, callback) {
+    const name = intentRequest.currentIntent.name;
+    if (name === 'DictAbout') {
+        return about(callback);
+    } else if (name === 'DictStop') {
+        return stop(callback);
+    } else if (name === 'DefineWord') {
+        return defineWord(intentRequest, callback);
+    } else if (name === 'DictLearn') {
+        return lexLearnHandler.handle(intentRequest, callback);
+    } else if (name === 'DictTest') {
+        return lexTestHandler.handle(intentRequest, callback);
+    }
+    throw new Error(`Intent with name ${name} not supported`);
 }
 
-function learnFulfill(user, callback) {
-    db
-        .getRandomWord(user)
-        .then(row => wordData(row))
-        .then(word =>
-            db
-                .recordProgress(user.id, word.id)
-                .then(() => word)
-        )
-        .then(word => callback(
-            lexResponses.close(
-                {
-                    options: JSON.stringify([
-                        {
-                            text: 'Continue',
-                            value: 'Continue'
-                        },
-                        {
-                            text: 'Stop',
-                            value: 'Stop'
-                        }
-                    ]),
-                    word: word.word,
-                    image: word.image,
-                    audio: word.audio
-                },
-                'Fulfilled',
-                {
-                    contentType: 'PlainText',
-                    content: word.definition
-                }
-            )
-        ));
-}
-
-function learn(intentRequest, callback) {
-    db.findUser(intentRequest.userId)
-        .then(user => {
-                console.log(`User found: ${JSON.stringify(user)}`);
-                if (user === null) {
-                    learnValidate(intentRequest, callback);
-                } else {
-                    learnFulfill(user, callback);
-                }
-            }
-        );
+function callbackWrapper(response, originalCallback) {
+    console.log(JSON.stringify(response, null, 2));
+    db.shutdown();
+    originalCallback(null, response);
 }
 
 function defineWord(intentRequest, callback) {
     const word = intentRequest.currentIntent.slots['Word'];
     db
         .getWord(word)
-        .then(row => wordData(row))
         .then(data => {
                 return callback(
                     lexResponses.close(
@@ -149,51 +105,3 @@ function stop(callback) {
         )
     );
 }
-
-function wordData(row) {
-    if (row) {
-        let data = JSON.parse(row.json);
-        console.log(`DB data: ${row.json}`);
-        return {
-            id: row.id,
-            word: row.word,
-            definition: data.definition.text,
-            image: data.images && data.images.length > 0 ? `http:${data.images[0].url}` : null,
-            audio: data.soundUrl ? `http:${data.soundUrl}` : null
-        };
-    } else {
-        return {}
-    }
-}
-
-function dispatch(intentRequest, callback) {
-    const name = intentRequest.currentIntent.name;
-    if (name === 'DictAbout') {
-        return about(callback);
-    } else if (name === 'DictStop') {
-        return stop(callback);
-    } else if (name === 'DefineWord') {
-        return defineWord(intentRequest, callback);
-    } else if (name === 'DictLearn') {
-        return learn(intentRequest, callback);
-    }
-    throw new Error(`Intent with name ${name} not supported`);
-}
-
-function callbackWrapper(response, originalCallback) {
-    console.log(JSON.stringify(response, null, 2));
-    db.shutdown();
-    originalCallback(null, response);
-}
-
-exports.handler = (event, context, callback) => {
-    console.log(`event: ${JSON.stringify(event)}`);
-    try {
-        if (event.bot.name !== BotName) {
-            callback(`Invalid bot name: ${event.bot.name}`);
-        }
-        dispatch(event, (response) => callbackWrapper(response, callback));
-    } catch (err) {
-        callback(err);
-    }
-};

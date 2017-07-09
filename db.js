@@ -32,7 +32,7 @@ module.exports.getWord = function (word) {
         {
             word: word
         }
-    ));
+    )).then(row => wordData(row));
 };
 
 module.exports.findUser = function(userId) {
@@ -65,12 +65,29 @@ module.exports.ensureUser = function(userId, level) {
 };
 
 module.exports.getRandomWord = function (userId, difficultyLevel) {
-    return connect().then(() => selectFirst(
-        'select * from words where id = 65977',
-        {
-        }
-    ));
+    return connect()
+        .then(() => selectFirst(
+            'select * from words where id = 65977',
+            {}
+        )).then(row => wordData(row));
 };
+
+
+function wordData(row) {
+    if (row) {
+        let data = JSON.parse(row.json);
+        console.log(`DB data: ${row.json}`);
+        return {
+            id: row.id,
+            word: row.word,
+            definition: data.definition.text,
+            image: data.images && data.images.length > 0 ? `http:${data.images[0].url}` : null,
+            audio: data.soundUrl ? `http:${data.soundUrl}` : null
+        };
+    } else {
+        return {}
+    }
+}
 
 module.exports.recordProgress = function (userId, wordId) {
     return connect()
