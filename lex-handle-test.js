@@ -23,7 +23,7 @@ function correctAnswer(callback) {
             {
                 options: JSON.stringify([
                     {
-                        text: 'Test again',
+                        text: 'Next test',
                         value: 'Test'
                     },
                     {

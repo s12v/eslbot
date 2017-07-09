@@ -83,7 +83,7 @@ function about(callback) {
             'Fulfilled',
             {
                 contentType: 'PlainText',
-                content: `Hi! Type "start" to learn new words, "test" to test your knowledge`
+                content: `Hi. Type "start" to learn new words, "test" to test your skills`
             }
         )
     );

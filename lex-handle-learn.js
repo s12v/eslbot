@@ -64,8 +64,12 @@ function learnFulfill(user, callback) {
                 {
                     options: JSON.stringify([
                         {
-                            text: 'Continue',
+                            text: 'Next word',
                             value: 'Continue'
+                        },
+                        {
+                            text: 'Test',
+                            value: 'Test'
                         },
                         {
                             text: 'Stop',
