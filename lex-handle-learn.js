@@ -1,6 +1,7 @@
 'use strict';
 
 const lexResponses = require('lex-responses');
+const richMessages = require('rich-messages');
 const db = require('db');
 
 const levels = ['Beginner', 'Intermediate', 'Advanced'];
@@ -31,24 +32,39 @@ function learnValidate(intentRequest, callback) {
     } else {
         callback(
             lexResponses.elicitSlot(
-                {
-                    options: JSON.stringify(levels.map(level => {
-                        return {
-                            text: level,
-                            value: level
-                        };
-                    }))
-                },
+                {},
                 intentRequest.currentIntent.name,
                 intentRequest.currentIntent.slots,
                 'Level',
                 {
                     contentType: 'PlainText',
-                    content: 'What is your English level?'
+                    content: richMessages.json([
+                       richMessages.text(
+                           'What is your English level?',
+                           levels.map(level => richMessages.option(level, level))
+                       )
+                    ])
                 }
             )
         )
     }
+}
+
+function buildMessagesForLearnCard(word) {
+    let massages = [richMessages.text(`Study this word: ${word.word}`)];
+    if (word.audio) {
+        massages.push(richMessages.audio(word.audio))
+    }
+    if (word.image) {
+        massages.push(richMessages.image(word.image))
+    }
+    massages.push(richMessages.text(`Definition: ${word.definition}`, [
+        richMessages.option('Next word', 'Continue'),
+        richMessages.option('Start test', 'Test'),
+        richMessages.option('Stop lesson', 'Stop')
+    ]));
+
+    return massages;
 }
 
 function learnFulfill(user, callback) {
@@ -59,32 +75,16 @@ function learnFulfill(user, callback) {
                 .recordProgress(user.id, word.id)
                 .then(() => word)
         )
-        .then(word => callback(
-            lexResponses.close(
-                {
-                    options: JSON.stringify([
-                        {
-                            text: 'Next word',
-                            value: 'Continue'
-                        },
-                        {
-                            text: 'Test',
-                            value: 'Test'
-                        },
-                        {
-                            text: 'Stop',
-                            value: 'Stop'
-                        }
-                    ]),
-                    word: word.word,
-                    image: word.image,
-                    audio: word.audio
-                },
-                'Fulfilled',
-                {
-                    contentType: 'PlainText',
-                    content: word.definition
-                }
+        .then(word => {
+            callback(
+                lexResponses.close(
+                    {},
+                    'Fulfilled',
+                    {
+                        contentType: 'PlainText',
+                        content: richMessages.json(buildMessagesForLearnCard(word))
+                    }
+                )
             )
-        ));
+        });
 }

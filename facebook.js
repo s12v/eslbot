@@ -2,6 +2,7 @@
 
 const facebookApi = require('facebook-api');
 const lexApi = require('lex-api');
+const richMessages = require('rich-messages');
 
 const VerifyToken = process.env.VERIFY_TOKEN;
 const PageId = process.env.PAGE_ID;
@@ -70,27 +71,15 @@ function sendMessageToLex(message) {
     return Promise.reject('Unsupported message type');
 }
 
-function processMessage(message) {
-    facebookApi.sendTyping(message.sender.id);
-    return sendMessageToLex(message)
-        .then(lexResult => {
-            console.log(`Lex response: ${JSON.stringify(lexResult)}`);
-            let session = lexResult.sessionAttributes && lexResult.dialogState !== 'ElicitIntent'
-                ? lexResult.sessionAttributes : {};
-            let p = Promise.resolve(1);
-            if (session.word) {
-                p = p.then(() => facebookApi.sendText(message.sender.id, session.word));
-            }
-            if (session.audio) {
-                p = p.then(() => facebookApi.sendAudio(message.sender.id, lexResult.sessionAttributes.audio));
-            }
-            if (session.image) {
-                p = p.then(() => facebookApi.sendImage(message.sender.id, lexResult.sessionAttributes.image));
-            }
-            if (lexResult.message) {
+function sendRichMessages(userId, messages) {
+    let p = Promise.resolve();
+    if (messages) {
+        messages.forEach(rm => {
+            console.log(`RichMessage: ${JSON.stringify(rm)}`);
+            if (rm.type === richMessages.Types.text) {
                 let quickReplies = null;
-                if (session.options) {
-                    quickReplies = JSON.parse(session.options).map(option => {
+                if (rm.options) {
+                    quickReplies = rm.options.map(option => {
                         return {
                             content_type: 'text',
                             title: option.text,
@@ -98,14 +87,35 @@ function processMessage(message) {
                         }
                     });
                 }
-                p = p.then(() => facebookApi.sendText(message.sender.id, lexResult.message, quickReplies));
+                p = p.then(() => facebookApi.sendText(userId, rm.text, quickReplies));
+            } else if (rm.type === richMessages.Types.audio) {
+                p = p.then(() => facebookApi.sendAudio(userId, rm.url));
+            } else if (rm.type === richMessages.Types.image) {
+                p = p.then(() => facebookApi.sendImage(userId, rm.url));
             }
+        })
+    }
+    return p;
+}
 
-            return p;
+function sendSimpleMessage(userId, text) {
+    return facebookApi.sendText(userId, text);
+}
+
+function processMessage(message) {
+    facebookApi.sendTyping(message.sender.id);
+    sendMessageToLex(message)
+        .then(lexResult => {
+            console.log(`Lex response: ${JSON.stringify(lexResult)}`);
+            let rm = richMessages.parse(lexResult.message);
+            if (rm) {
+                return sendRichMessages(message.sender.id, rm);
+            } else {
+                return sendSimpleMessage(message.sender.id, lexResult.message);
+            }
         })
         .catch(err => {
             console.error(err);
             facebookApi.sendText(message.sender.id, 'Error occurred, please try again');
-        })
-    ;
+        });
 }

@@ -1,6 +1,6 @@
 'use strict';
 
-module.exports.elicitSlot = function(sessionAttributes, intentName, slots, slotToElicit, message, responseCard) {
+module.exports.elicitSlot = function (sessionAttributes, intentName, slots, slotToElicit, message, responseCard) {
     return {
         sessionAttributes,
         dialogAction: {
@@ -14,7 +14,7 @@ module.exports.elicitSlot = function(sessionAttributes, intentName, slots, slotT
     };
 };
 
-module.exports.confirmIntent = function(sessionAttributes, intentName, slots, message, responseCard) {
+module.exports.confirmIntent = function (sessionAttributes, intentName, slots, message, responseCard) {
     return {
         sessionAttributes,
         dialogAction: {
@@ -27,7 +27,7 @@ module.exports.confirmIntent = function(sessionAttributes, intentName, slots, me
     };
 };
 
-module.exports.close = function(sessionAttributes, fulfillmentState, message, responseCard) {
+module.exports.close = function (sessionAttributes, fulfillmentState, message, responseCard) {
     return {
         sessionAttributes,
         dialogAction: {
@@ -39,7 +39,7 @@ module.exports.close = function(sessionAttributes, fulfillmentState, message, re
     };
 };
 
-module.exports.delegate = function(sessionAttributes, slots) {
+module.exports.delegate = function (sessionAttributes, slots) {
     return {
         sessionAttributes,
         dialogAction: {
@@ -50,7 +50,7 @@ module.exports.delegate = function(sessionAttributes, slots) {
 };
 
 // Build a responseCard with a title, subtitle, and an optional set of options which should be displayed as buttons.
-module.exports.buildResponseCard = function(title, subTitle, options) {
+module.exports.buildResponseCard = function (title, subTitle, options) {
     let buttons = null;
     if (options !== null) {
         buttons = [];

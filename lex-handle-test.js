@@ -1,13 +1,11 @@
 'use strict';
 
 const lexResponses = require('lex-responses');
+const richMessages = require('rich-messages');
 const db = require('db');
 
-
 // TODO max number of attempts
-// TODO voice input
 // TODO first name
-// TODO ./ffmpeg -i audioclip-1499559551000-1664.mp4 -ar 16000 -ac 1 output.wav
 
 exports.handle = function (intentRequest, callback) {
     db.findUser(intentRequest.userId)
@@ -25,26 +23,17 @@ exports.handle = function (intentRequest, callback) {
 function correctAnswer(callback) {
     callback(
         lexResponses.close(
-            {
-                options: JSON.stringify([
-                    {
-                        text: 'Next test',
-                        value: 'Test'
-                    },
-                    {
-                        text: 'Learn',
-                        value: 'Learn'
-                    },
-                    {
-                        text: 'Stop',
-                        value: 'Stop'
-                    }
-                ])
-            },
+            {},
             'Fulfilled',
             {
                 contentType: 'PlainText',
-                content: `Good!`
+                content: richMessages.json([
+                    richMessages.text('Good!', [
+                        richMessages.option('Next test', 'Test'),
+                        richMessages.option('Learn', 'Learn'),
+                        richMessages.option('Stop', 'Stop'),
+                    ])
+                ])
             }
         )
     );
@@ -72,19 +61,32 @@ function wrongAnswer(callback, intentRequest) {
     )
 }
 
+function buildMessagesForTestCard(word) {
+    let messages = [
+        richMessages.text('Read the definition and guess a word'),
+    ];
+
+    if (word.image) {
+        messages.push(richMessages.image(word.image))
+    }
+
+    messages.push(richMessages.text(word.definition));
+
+    return messages;
+}
+
 function giveTask(word, intentRequest, callback) {
     callback(
         lexResponses.elicitSlot(
             {
                 secretWord: word.word,
-                image: word.image
             },
             intentRequest.currentIntent.name,
             intentRequest.currentIntent.slots,
             'Word',
             {
                 contentType: 'PlainText',
-                content: word.definition
+                content: richMessages.json(buildMessagesForTestCard(word))
             }
         )
     )
@@ -101,7 +103,7 @@ function handleTestIntent(user, intentRequest, callback) {
         }
     } else {
         db
-            .getRandomWord(user)
+            .getRandomTestWord(user)
             .then(word =>
                 giveTask(word, intentRequest, callback)
             )
@@ -111,22 +113,16 @@ function handleTestIntent(user, intentRequest, callback) {
 function testIntentUnknownUser(callback) {
     callback(
         lexResponses.close(
-            {
-                options: JSON.stringify([
-                    {
-                        text: 'Learn',
-                        value: 'Learn'
-                    },
-                    {
-                        text: 'Stop',
-                        value: 'Stop'
-                    }
-                ])
-            },
+            {},
             'Fulfilled',
             {
                 contentType: 'PlainText',
-                content: `You haven't learned any words yet!`
+                content: richMessages.json([
+                    richMessages.text(`You haven't learned any words yet!`, [
+                        richMessages.option('Learn', 'Learn'),
+                        richMessages.option('Stop', 'Stop')
+                    ])
+                ])
             }
         )
     );

@@ -20,7 +20,6 @@ let connection = null;
 
 module.exports.shutdown = function () {
     if (connection !== null) {
-        console.log('close connection');
         connection.close();
         connection = null;
     }
@@ -28,7 +27,7 @@ module.exports.shutdown = function () {
 
 module.exports.getWord = function (word) {
     return connect().then(() => selectFirst(
-        'select * from words where word = @word',
+        'SELECT * FROM words WHERE word = @word',
         {
             word: word
         }
@@ -37,7 +36,7 @@ module.exports.getWord = function (word) {
 
 module.exports.findUser = function(userId) {
     return connect().then(() => selectFirst(
-        'select * from users where id = @id',
+        'SELECT * FROM users WHERE id = @id',
         {
             id: userId
         }
@@ -46,15 +45,14 @@ module.exports.findUser = function(userId) {
 
 module.exports.ensureUser = function(userId, level) {
     return connect().then(() => selectFirst(
-        'select * from users where id = @id',
+        'SELECT * FROM users WHERE id = @id',
         {
             id: userId
         }
     )).then((user) => {
-        console.log(`User found: ${JSON.stringify(user)}`);
         if (user === null) {
             return execute(
-                `insert into users (id, level) values (@id, @level)`,
+                `INSERT INTO users (id, level) VALUES (@id, @level)`,
                 {
                     id: userId,
                     level: level
@@ -64,49 +62,60 @@ module.exports.ensureUser = function(userId, level) {
     });
 };
 
-module.exports.getRandomWord = function (userId, difficultyLevel) {
+module.exports.getRandomWord = function (user) {
     return connect()
         .then(() => selectFirst(
-            'select * from words where id = 65977',
-            {}
+            `SELECT TOP 1 w.*
+            FROM words w
+              LEFT JOIN progress p
+                ON w.id = p.word_id
+                   AND p.user_id = @userId
+            WHERE w.difficulty_level IN (${difficultyLevelByUserLevel(user.level).join(',')})
+                  AND (p.next_repeat < GETUTCDATE() OR p.next_repeat IS NULL)
+            ORDER BY newid()`,
+            {
+                userId: user.id
+            }
         )).then(row => wordData(row));
 };
 
-module.exports.getAllWords = function () {
+module.exports.getRandomTestWord = function (user) {
+    return connect()
+        .then(() => selectFirst(
+            `SELECT TOP 1 w.*
+            FROM words w
+              LEFT JOIN progress p
+                ON w.id = p.word_id
+                   AND p.user_id = @userId
+            ORDER BY newid()`,
+            {
+                userId: user.id
+            }
+        )).then(row => wordData(row));
+};
+
+module.exports.get10kWords = function () {
     return connect()
         .then(() => execute(
-            'select top 10000 word from words order by difficulty_level asc',
+            'SELECT TOP 10000 word FROM words ORDER BY difficulty_level ASC',
             {}
         ));
 };
-
-function wordData(row) {
-    if (row) {
-        let data = JSON.parse(row.json);
-        console.log(`DB data: ${row.json}`);
-        return {
-            id: row.id,
-            word: row.word,
-            definition: data.definition.text,
-            image: data.images && data.images.length > 0 ? `http:${data.images[0].url}` : null,
-            audio: data.soundUrl ? `http:${data.soundUrl}` : null
-        };
-    } else {
-        return {}
-    }
-}
 
 module.exports.recordProgress = function (userId, wordId) {
     return connect()
         .then(() => {
             let sql =
-                `begin tran
-                    update progress set repeat_count = repeat_count + 1, updated_at = GETUTCDATE() where user_id = @userId and word_id = @wordId
-                    if @@rowcount = 0
-                    begin
-                        insert into progress (user_id, word_id, repeat_count, next_repeat) values (@userId, @wordId, 1, DATEADD(week, 2, GETUTCDATE()))
-                    end
-                commit tran`;
+                `BEGIN TRAN
+                UPDATE progress
+                SET repeat_count = repeat_count + 1, updated_at = GETUTCDATE()
+                WHERE user_id = @userId AND word_id = @wordId
+                IF @@rowcount = 0
+                  BEGIN
+                    INSERT INTO progress (user_id, word_id, repeat_count, next_repeat)
+                    VALUES (@userId, @wordId, 1, DATEADD(WEEK, 2, GETUTCDATE()))
+                  END
+                COMMIT TRAN`;
             return execute(sql, {
                 userId: userId,
                 wordId: wordId
@@ -117,18 +126,38 @@ module.exports.recordProgress = function (userId, wordId) {
 function connect() {
     return new Promise(function (resolve, reject) {
         if (connection === null) {
-            console.log('Connecting...');
             connection = new Connection(config);
             connection.on('connect', function (err) {
-                console.log('on connect');
                 if (err) reject(err);
                 else     resolve();
             });
         } else {
-            console.log('Already connected');
             resolve();
         }
     })
+}
+
+function difficultyLevelByUserLevel(level) {
+    return [
+        [1, 2, 3],
+        [2, 3, 4, 5],
+        [2, 3, 4, 5, 6]
+    ][level];
+}
+
+function wordData(row) {
+    if (row) {
+        let data = JSON.parse(row.json);
+        return {
+            id: row.id,
+            word: row.word,
+            definition: data.definition.text,
+            image: data.images && data.images.length > 0 ? `http:${data.images[0].url}` : null,
+            audio: data.soundUrl ? `http:${data.soundUrl}` : null
+        };
+    } else {
+        return {}
+    }
 }
 
 function selectFirst(query, params) {

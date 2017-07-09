@@ -5,7 +5,7 @@ const db = require('db');
 const lexmodelbuildingservice = new AWS.LexModelBuildingService();
 
 module.exports.slot = function () {
-    db.getAllWords()
+    db.get10kWords()
         .then(words => {
             let enumerationValues = words.map(word => {
                 return {
@@ -21,15 +21,10 @@ module.exports.slot = function () {
             lexmodelbuildingservice.putSlotType(params, function (err, data) {
                 if (err) {
                     console.log(err, err.stack);
-                    close();
                 } else {
                     console.log(data);
-                    close();
                 }
+                db.shutdown();
             });
         });
 };
-
-function close() {
-    db.shutdown();
-}
