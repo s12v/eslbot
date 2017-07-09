@@ -49,7 +49,7 @@ function wrongAnswer(callback, intentRequest) {
     callback(
         lexResponses.elicitSlot(
             {
-                secretWord: word.word
+                secretWord: intentRequest.sessionAttributes.secretWord
             },
             intentRequest.currentIntent.name,
             intentRequest.currentIntent.slots,
