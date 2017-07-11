@@ -84,7 +84,7 @@ module.exports.getRandomTestWord = function (user) {
         .then(() => selectFirst(
             `SELECT TOP 1 w.*
             FROM words w
-              LEFT JOIN progress p
+              INNER JOIN progress p
                 ON w.id = p.word_id
                    AND p.user_id = @userId
             ORDER BY newid()`,

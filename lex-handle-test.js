@@ -4,8 +4,6 @@ const lexResponses = require('lex-responses');
 const richMessages = require('rich-messages');
 const db = require('db');
 
-// TODO max number of attempts
-// TODO first name
 
 exports.handle = function (intentRequest, callback) {
     db.findUser(intentRequest.userId)
@@ -17,7 +15,25 @@ exports.handle = function (intentRequest, callback) {
                     handleTestIntent(user, intentRequest, callback);
                 }
             }
-        );
+        ).catch(e => {
+            console.error(e);
+            callback(
+                lexResponses.close(
+                    {},
+                    'Fulfilled',
+                    {
+                        contentType: 'PlainText',
+                        content: richMessages.json([
+                            richMessages.text('Something went wrong', [
+                                richMessages.option('Test', 'Test'),
+                                richMessages.option('Learn', 'Learn'),
+                            ])
+                        ])
+                    }
+                )
+            );
+        }
+    );
 };
 
 function correctAnswer(callback) {
@@ -39,38 +55,63 @@ function correctAnswer(callback) {
     );
 }
 
-function wrongAnswer(callback, intentRequest) {
-
-    let message = intentRequest.inputTranscript
-        ? `Your input: ${intentRequest.inputTranscript}. Wrong! Try again`
-        : 'Nope. Try again!';
-
-    callback(
-        lexResponses.elicitSlot(
-            {
-                secretWord: intentRequest.sessionAttributes.secretWord
-            },
-            intentRequest.currentIntent.name,
-            intentRequest.currentIntent.slots,
-            'Word',
-            {
-                contentType: 'PlainText',
-                content: message
-            }
+function wrongAnswer(word, callback, intentRequest) {
+    if (intentRequest.sessionAttributes.attempts >= 3) {
+        skipTest(word, callback);
+    } else {
+        let attempts = intentRequest.sessionAttributes.attempts + 1;
+        callback(
+            lexResponses.elicitSlot(
+                {
+                    json: intentRequest.sessionAttributes.json,
+                    attempts: attempts
+                },
+                intentRequest.currentIntent.name,
+                intentRequest.currentIntent.slots,
+                'Word',
+                {
+                    contentType: 'PlainText',
+                    content: richMessages.json(buildMessagesForTestCard(word, intentRequest, attempts))
+                }
+            )
         )
-    )
+    }
 }
 
-function buildMessagesForTestCard(word) {
-    let messages = [
-        richMessages.text('Read the definition and guess a word'),
-    ];
+function buildMessagesForTestCard(word, attempts, intentRequest) {
+    let messages = [];
 
-    if (word.image) {
-        messages.push(richMessages.image(word.image))
+    if (attempts === 0) {
+        if (word.audio) { // TODO change to Polly audio
+            messages.push(richMessages.text('Listen to the definition and guess the word:'));
+            messages.push(richMessages.audio(word.audio));
+        } else {
+            messages.push(richMessages.text('Read the definition and guess the word:'));
+            messages.push(richMessages.text(word.definition));
+        }
+    } else {
+        let message = intentRequest.inputTranscript
+            ? `Your input: ${intentRequest.inputTranscript}. Wrong! Try again`
+            : 'Wrong answer';
+        messages.push(richMessages.text(message));
+
+        if (attempts === 1)  {
+            messages.push(richMessages.text(`Here's a hint:`));
+            if (word.image) {
+                messages.push(richMessages.image(word.image));
+            }
+            messages.push(richMessages.text(word.definition), [
+                richMessages.option(`I don't know`, `Skip`)
+            ]);
+        }
+
+        if (attempts === 2 && word.audio)  {
+            messages.push(richMessages.text(`Here's the final hint`));
+            messages.push(richMessages.audio(word.audio), [
+                richMessages.option(`I don't know`, `Skip`)
+            ]);
+        }
     }
-
-    messages.push(richMessages.text(word.definition));
 
     return messages;
 }
@@ -79,34 +120,89 @@ function giveTask(word, intentRequest, callback) {
     callback(
         lexResponses.elicitSlot(
             {
-                secretWord: word.word,
+                json: JSON.stringify(word),
+                attempts: 0
             },
             intentRequest.currentIntent.name,
             intentRequest.currentIntent.slots,
             'Word',
             {
                 contentType: 'PlainText',
-                content: richMessages.json(buildMessagesForTestCard(word))
+                content: richMessages.json(buildMessagesForTestCard(word, intentRequest, 0))
             }
         )
     )
 }
 
+function skipTest(word, callback) {
+    callback(
+        lexResponses.close(
+            {},
+            'Fulfilled',
+            {
+                contentType: 'PlainText',
+                content: richMessages.json([
+                    richMessages.text(`Too bad! The answer is "${word.word}"`, [
+                        richMessages.option('Next test', 'Test'),
+                        richMessages.option('Learn', 'Learn'),
+                        richMessages.option('Stop', 'Stop'),
+                    ])
+                ])
+            }
+        )
+    );
+}
+
 function handleTestIntent(user, intentRequest, callback) {
     console.log("handleTestIntent: " + JSON.stringify(intentRequest));
     if (intentRequest.currentIntent.slots['Word']) {
-        if (intentRequest.sessionAttributes.secretWord.toLowerCase() ===
-            intentRequest.currentIntent.slots['Word'].toLowerCase()) {
-            correctAnswer(callback);
+        let lowercaseWord = intentRequest.currentIntent.slots['Word'].toLowerCase();
+        let word = intentRequest.sessionAttributes.json ? JSON.parse(intentRequest.sessionAttributes.json) : {};
+        if (lowercaseWord === 'skip' || lowercaseWord === `i don't know`) {
+            skipTest(word, callback);
         } else {
-            wrongAnswer(callback, intentRequest);
+            if (word && word.word.toLowerCase() === lowercaseWord) {
+                correctAnswer(callback);
+            } else {
+                wrongAnswer(word, callback, intentRequest);
+            }
         }
     } else {
         db
             .getRandomTestWord(user)
-            .then(word =>
-                giveTask(word, intentRequest, callback)
+            .then(word => {
+                    if (word) {
+                        giveTask(word, intentRequest, callback)
+                    } else {
+                        callback(
+                            lexResponses.close(
+                                {},
+                                'Fulfilled',
+                                {
+                                    contentType: 'PlainText',
+                                    content: richMessages(`You haven't learned any words yet`, [
+                                        richMessages.option('Learn', 'Learn'),
+                                        richMessages.option('Stop', 'Stop'),
+                                    ])
+                                }
+                            )
+                        );
+                    }
+                }
             )
+            .catch(e => {
+                console.error(e);
+                callback(
+                    lexResponses.close(
+                        {},
+                        'Fulfilled',
+                        {
+                            contentType: 'PlainText',
+                            content: 'Something went wrong. Sorry. Try again.'
+                        }
+                    )
+                );
+            })
     }
 }
 

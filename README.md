@@ -1,6 +1,7 @@
 # ESL bot
 
-This bot can help you to learn new English words.
+This bot helps you to learn new English words.
+This bot helps you to learn new English words.
 
 It's build with AWS Lex, Polly, API Gateway, S3, and Lambda.
 Resources created and deployed with Cloud Formation and Serverless.
