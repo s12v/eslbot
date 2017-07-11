@@ -1,11 +1,11 @@
 'use strict';
 
-
 const Types = {
     text: 'text',
     audio: 'audio',
     image: 'image',
 };
+
 
 module.exports.Types = Types;
 
@@ -18,16 +18,12 @@ module.exports.json = function (messages) {
 module.exports.parse = function (json) {
     try {
         let richMessages = JSON.parse(json);
-        console.log(`Parsed: ${richMessages}`);
         if (typeof richMessages === 'object' && richMessages !== null && richMessages.messages) {
-            console.log(`messages: ${richMessages.messages}`);
             return richMessages.messages
         } else {
-            console.error('NO');
             return null;
         }
     } catch(e) {
-        console.error(e);
         return null;
     }
 };
@@ -59,5 +55,4 @@ module.exports.option = function (text, value) {
         text: text,
         value: value
     }
-
 };

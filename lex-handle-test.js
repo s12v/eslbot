@@ -3,6 +3,7 @@
 const lexResponses = require('lex-responses');
 const richMessages = require('rich-messages');
 const db = require('db');
+const polly = require('polly-api');
 
 
 exports.handle = function (intentRequest, callback) {
@@ -60,35 +61,41 @@ function wrongAnswer(word, callback, intentRequest) {
         skipTest(word, callback);
     } else {
         let attempts = intentRequest.sessionAttributes.attempts + 1;
-        callback(
-            lexResponses.elicitSlot(
-                {
-                    json: intentRequest.sessionAttributes.json,
-                    attempts: attempts
-                },
-                intentRequest.currentIntent.name,
-                intentRequest.currentIntent.slots,
-                'Word',
-                {
-                    contentType: 'PlainText',
-                    content: richMessages.json(buildMessagesForTestCard(word, intentRequest, attempts))
-                }
+        buildMessagesForTestCard(word, intentRequest, attempts, () => callback(messages =>
+                lexResponses.elicitSlot(
+                    {
+                        json: intentRequest.sessionAttributes.json,
+                        attempts: attempts
+                    },
+                    intentRequest.currentIntent.name,
+                    intentRequest.currentIntent.slots,
+                    'Word',
+                    {
+                        contentType: 'PlainText',
+                        content: richMessages.json(messages)
+                    }
+                )
             )
-        )
+        );
     }
 }
 
-function buildMessagesForTestCard(word, attempts, intentRequest) {
+function buildMessagesForTestCard(word, intentRequest, attempts, callback) {
     let messages = [];
 
     if (attempts === 0) {
-        if (word.audio) { // TODO change to Polly audio
-            messages.push(richMessages.text('Listen to the definition and guess the word:'));
-            messages.push(richMessages.audio(word.audio));
-        } else {
-            messages.push(richMessages.text('Read the definition and guess the word:'));
-            messages.push(richMessages.text(word.definition));
-        }
+        polly.getDefinitionAudio(word)
+            .then((url) => {
+                if (url === null) {
+                    messages.push(richMessages.text('Read the definition and guess the word:'));
+                    messages.push(richMessages.text(word.definition));
+                } else {
+                    messages.push(richMessages.text('Listen to the definition and guess the word:'));
+                    messages.push(richMessages.audio(url));
+                }
+
+                callback(messages);
+            });
     } else {
         let message = intentRequest.inputTranscript
             ? `Your input: ${intentRequest.inputTranscript}. Wrong! Try again`
@@ -111,27 +118,29 @@ function buildMessagesForTestCard(word, attempts, intentRequest) {
                 richMessages.option(`I don't know`, `Skip`)
             ]);
         }
-    }
 
-    return messages;
+        callback(messages);
+    }
 }
 
 function giveTask(word, intentRequest, callback) {
-    callback(
-        lexResponses.elicitSlot(
-            {
-                json: JSON.stringify(word),
-                attempts: 0
-            },
-            intentRequest.currentIntent.name,
-            intentRequest.currentIntent.slots,
-            'Word',
-            {
-                contentType: 'PlainText',
-                content: richMessages.json(buildMessagesForTestCard(word, intentRequest, 0))
-            }
+    buildMessagesForTestCard(word, intentRequest, 0, (messages) =>
+        callback(
+            lexResponses.elicitSlot(
+                {
+                    json: JSON.stringify(word),
+                    attempts: 0
+                },
+                intentRequest.currentIntent.name,
+                intentRequest.currentIntent.slots,
+                'Word',
+                {
+                    contentType: 'PlainText',
+                    content: richMessages.json(messages)
+                }
+            )
         )
-    )
+    );
 }
 
 function skipTest(word, callback) {

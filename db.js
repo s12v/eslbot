@@ -175,7 +175,6 @@ function execute(query, params) {
                     console.log(`DB error: ${err}`);
                     reject(err);
                 } else {
-                    console.log(`row count: ${rowCount}`);
                     resolve(
                         rows.map(row => {
                             let r = {};
