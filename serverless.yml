@@ -16,14 +16,17 @@ provider:
       Resource: "*"
     - Effect: "Allow"
       Action:
-        #       - "s3:PutObjectAcl"
-        - "s3:ListAllMyBuckets"
         - "s3:ListBucket"
-        - "s3:PutObject"
         - "s3:GetObject"
-      Resource: "*"
-#      Resource:
-#        'Fn::ImportValue': dictbot-s3-polly-cache-bucket
+        - "s3:PutObject"
+        - "s3:PutObjectAcl"
+        - "s3:PutObjectTagging"
+      Resource:
+        - 'Fn::ImportValue': dictbot-s3-polly-cache-bucket-arn
+        - 'Fn::Join':
+            - '/'
+            - - 'Fn::ImportValue': dictbot-s3-polly-cache-bucket-arn
+              - '*'
 
 package:
   exclude:
@@ -55,8 +58,8 @@ functions:
     memorySize: 128
     timeout: 30
     environment:
-      POLLY_CACHE_S3_ARN:
-        'Fn::ImportValue': dictbot-s3-polly-cache-bucket
+      POLLY_CACHE_S3_BUCKET_NAME:
+        'Fn::ImportValue': dictbot-s3-polly-cache-bucket-name
 
 resources:
   Resources:

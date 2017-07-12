@@ -8,9 +8,8 @@ const audio = require('audio');
 const polly = new AWS.Polly();
 const s3 = new AWS.S3();
 
-const S3BucketArn = process.env.POLLY_CACHE_S3_ARN;
-const S3Bucket = S3BucketArn.lastIndexOf(":") > 0 ? S3BucketArn.substr(S3BucketArn.lastIndexOf(":") + 1) : null;
-const VoiceId = 'Joanna';
+const S3BucketName = process.env.POLLY_CACHE_S3_BUCKET_NAME;
+const VoiceId = 'Amy';
 
 exports.getDefinitionAudio = function (word) {
     return objectExists(word)
@@ -22,17 +21,15 @@ exports.getDefinitionAudio = function (word) {
                 console.log("Object DOES NOT exist");
                 return textToSpeech(word.definition)
                     .then(binaryString => saveToS3(word, binaryString))
-                    .then(() => getSignedUrl(word));
+                    .then(() => getUrl(word));
             }
         }).catch(e => console.error(e));
 };
 
 function objectExists(word) {
     return new Promise((resolve, reject) => {
-        console.log(`S3BucketArn: ${S3BucketArn}`);
-        console.log(`S3Bucket: ${S3Bucket}`);
         let params = {
-            Bucket: S3Bucket,
+            Bucket: S3BucketName,
             Key: objectKey(word)
         };
         s3.headObject(params, function (err, url) {
@@ -47,29 +44,16 @@ function objectExists(word) {
     });
 }
 
-function getSignedUrl(word) {
-    return new Promise((resolve, reject) => {
-        let params = {
-            Bucket: S3Bucket,
-            Key: objectKey(word)
-        };
-        s3.getSignedUrl('getObject', params, function (err, url) {
-            if (err) {
-                console.error(err);
-                reject(err);
-            } else {
-                console.log('S3 URL: ', url);
-                resolve(url);
-            }
-        });
-    });
+function getUrl(word) {
+    return `https://s3.amazonaws.com/${S3BucketName}/${objectKey(word)}`;
 }
 
 function saveToS3(word, binaryString) {
     return new Promise((resolve, reject) => {
         let params = {
-            Bucket: S3Bucket,
+            Bucket: S3BucketName,
             Key: objectKey(word),
+            ACL: 'public-read',
             Body: binaryString,
             Tagging: `WordId=${word.id}&Word=${word.word}`
         };
@@ -90,7 +74,7 @@ function textToSpeech(text) {
     return new Promise((resolve, reject) => {
         let params = {
             OutputFormat: 'mp3',
-            SampleRate: '16000',
+            SampleRate: '22050',
             Text: text,
             TextType: 'text',
             VoiceId: VoiceId
@@ -108,7 +92,7 @@ function textToSpeech(text) {
 }
 
 function objectKey(word) {
-    let hash = crypto.createHash('sha256');
+    let hash = crypto.createHash('sha1');
     hash.update(word.definition.toLowerCase());
     return hash.digest('hex') + '.mp3';
 }

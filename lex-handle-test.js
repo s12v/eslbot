@@ -86,12 +86,12 @@ function buildMessagesForTestCard(word, intentRequest, attempts, callback) {
     if (attempts === 0) {
         polly.getDefinitionAudio(word)
             .then((url) => {
-                if (url === null) {
-                    messages.push(richMessages.text('Read the definition and guess the word:'));
-                    messages.push(richMessages.text(word.definition));
-                } else {
+                if (url) {
                     messages.push(richMessages.text('Listen to the definition and guess the word:'));
                     messages.push(richMessages.audio(url));
+                } else {
+                    messages.push(richMessages.text('Read the definition and guess the word:'));
+                    messages.push(richMessages.text(word.definition));
                 }
 
                 callback(messages);
