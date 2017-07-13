@@ -9,7 +9,7 @@ const polly = new AWS.Polly();
 const s3 = new AWS.S3();
 
 const S3BucketName = process.env.POLLY_CACHE_S3_BUCKET_NAME;
-const VoiceId = 'Amy';
+const VoiceId = 'Brian';
 
 exports.getDefinitionAudio = function (word) {
     return objectExists(word)
@@ -54,6 +54,7 @@ function saveToS3(word, binaryString) {
             Bucket: S3BucketName,
             Key: objectKey(word),
             ACL: 'public-read',
+            ContentType: 'audio/mpeg',
             Body: binaryString,
             Tagging: `WordId=${word.id}&Word=${word.word}`
         };
@@ -84,7 +85,6 @@ function textToSpeech(text) {
                 console.log(`Polly error: ${err}`, err.stack);
                 reject(err);
             } else {
-                console.log(`Polly response: ${JSON.stringify(data)}`);
                 resolve(data.AudioStream);
             }
         });

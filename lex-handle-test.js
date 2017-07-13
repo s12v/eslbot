@@ -200,7 +200,7 @@ function handleTestIntent(user, intentRequest, callback) {
                 }
             )
             .catch(e => {
-                console.error(e);
+                console.error(e, e.stack);
                 callback(
                     lexResponses.close(
                         {},
