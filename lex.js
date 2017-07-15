@@ -77,18 +77,7 @@ function about(callback) {
 
     callback(
         lexResponses.close(
-            {
-                options: JSON.stringify([
-                    {
-                        text: 'Start',
-                        value: 'Start'
-                    },
-                    {
-                        text: 'Test',
-                        value: 'Test'
-                    }
-                ])
-            },
+            {},
             'Fulfilled',
             {
                 contentType: 'PlainText',
