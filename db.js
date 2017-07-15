@@ -147,17 +147,18 @@ function difficultyLevelByUserLevel(level) {
 
 function wordData(row) {
     if (row) {
-        let data = JSON.parse(row.json);
-        return {
-            id: row.id,
-            word: row.word,
-            definition: data.definition.text,
-            image: data.images && data.images.length > 0 ? `http:${data.images[0].url}` : null,
-            audio: data.soundUrl ? `http:${data.soundUrl}` : null
-        };
-    } else {
-        return {}
+        try {
+            let data = JSON.parse(row.json);
+            return {
+                id: row.id,
+                word: row.word,
+                definition: data.definition.text,
+                image: data.images && data.images.length > 0 ? `http:${data.images[0].url}` : null,
+                audio: data.soundUrl ? `http:${data.soundUrl}` : null
+            };
+        } catch(e) {}
     }
+    return null;
 }
 
 function selectFirst(query, params) {
