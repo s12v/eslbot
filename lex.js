@@ -1,12 +1,12 @@
 'use strict';
 
-const lexResponses = require('lex-responses');
 const db = require('db');
+const lexResponses = require('lex-responses');
 const lexLearnHandler = require('lex-handle-learn');
 const lexTestHandler = require('lex-handle-test');
+const richMessages = require('rich-messages');
 
 const BotName = process.env.BOT_NAME;
-
 
 
 exports.handler = (event, context, callback) => {
@@ -66,6 +66,15 @@ function defineWord(intentRequest, callback) {
 }
 
 function about(callback) {
+
+    const messages = [];
+    messages.push(richMessages.text(`Hi. I'm a bot. I can help you to learn new English words`));
+    messages.push(richMessages.text(`You can send me text or voice messages`));
+    messages.push(richMessages.text(`Say "start" to learn new words or "test" to test your skills`, [
+        richMessages.option('Start', 'Start'),
+        richMessages.option('Test', 'Test'),
+    ]));
+
     callback(
         lexResponses.close(
             {
@@ -83,24 +92,26 @@ function about(callback) {
             'Fulfilled',
             {
                 contentType: 'PlainText',
-                content: `Hi. Type "start" to learn new words, "test" to test your skills`
+                content: richMessages.json(messages)
             }
         )
     );
 }
 
 function stop(callback) {
+    const replies = [
+        'See you later!',
+        'Thanks for your time. Good-bye',
+        'Have a good day. Bye!'
+    ];
+
     callback(
         lexResponses.close(
             {},
             'Fulfilled',
             {
                 contentType: 'PlainText',
-                content: [
-                    'See you later!',
-                    'Good-bye',
-                    'Bye'
-                ][Math.floor(Math.random() * 3)]
+                content: replies[Math.floor(Math.random() * replies.length)]
             }
         )
     );

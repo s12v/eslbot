@@ -13,18 +13,16 @@ const VoiceId = 'Brian';
 
 exports.getDefinitionAudio = function (word) {
     return objectExists(word)
-        .then(exists => {
-            if (exists) {
-                console.log("Object exists");
-                return getSignedUrl(word);
-            } else {
-                console.log("Object DOES NOT exist");
-                return textToSpeech(word.definition)
-                    .then(binaryString => saveToS3(word, binaryString))
-                    .then(() => getUrl(word));
-            }
+        .then(s3ObjectExists => {
+            let p = s3ObjectExists ? Promise.resolve() : saveWordDefinitionAudio(word);
+            return p.then(() => getUrl(word));
         }).catch(e => console.error(e));
 };
+
+function saveWordDefinitionAudio(word) {
+    return textToSpeech(word.definition)
+        .then(binaryString => saveToS3(word, binaryString));
+}
 
 function objectExists(word) {
     return new Promise((resolve, reject) => {
@@ -34,10 +32,9 @@ function objectExists(word) {
         };
         s3.headObject(params, function (err, url) {
             if (err) {
-                console.log(`objectExists: error ` + err);
+                console.log(err);
                 resolve(false);
             } else {
-                console.log(`objectExists: TRUE`);
                 resolve(true);
             }
         });
@@ -60,11 +57,10 @@ function saveToS3(word, binaryString) {
         };
         s3.putObject(params, function(err, data) {
             if (err) {
-                console.log(`saveToS3 error: ${err}`, err.stack);
+                console.log(err, err.stack);
                 reject(err);
             }
             else {
-                console.log(`saveToS3 response: ${JSON.stringify(data)}`);
                 resolve();
             }
         });

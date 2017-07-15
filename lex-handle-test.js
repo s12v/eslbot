@@ -56,12 +56,13 @@ function correctAnswer(callback) {
     );
 }
 
-function wrongAnswer(word, callback, intentRequest) {
+function wrongAnswer(word, intentRequest, callback) {
     if (intentRequest.sessionAttributes.attempts >= 3) {
         skipTest(word, callback);
     } else {
-        let attempts = intentRequest.sessionAttributes.attempts + 1;
-        buildMessagesForTestCard(word, intentRequest, attempts, () => callback(messages =>
+        let attempts = parseInt(intentRequest.sessionAttributes.attempts) + 1;
+        buildMessagesForTestCard(word, intentRequest, attempts, messages =>
+            callback(
                 lexResponses.elicitSlot(
                     {
                         json: intentRequest.sessionAttributes.json,
@@ -81,6 +82,7 @@ function wrongAnswer(word, callback, intentRequest) {
 }
 
 function buildMessagesForTestCard(word, intentRequest, attempts, callback) {
+    console.log(`buildMessagesForTestCard. word: ${word}, intentRequest: ${JSON.stringify(intentRequest)}, attempts: ${attempts}`);
     let messages = [];
 
     if (attempts === 0) {
@@ -97,26 +99,26 @@ function buildMessagesForTestCard(word, intentRequest, attempts, callback) {
                 callback(messages);
             });
     } else {
-        let message = intentRequest.inputTranscript
-            ? `Your input: ${intentRequest.inputTranscript}. Wrong! Try again`
-            : 'Wrong answer';
-        messages.push(richMessages.text(message));
+        if (intentRequest.inputTranscript) {
+            messages.push(richMessages.text(`Your input: ${intentRequest.inputTranscript}`));
+        }
+        messages.push(richMessages.text('Incorrect. Try again!'));
 
         if (attempts === 1)  {
             messages.push(richMessages.text(`Here's a hint:`));
             if (word.image) {
                 messages.push(richMessages.image(word.image));
             }
-            messages.push(richMessages.text(word.definition), [
+            messages.push(richMessages.text(word.definition, [
                 richMessages.option(`I don't know`, `Skip`)
-            ]);
+            ]));
         }
 
         if (attempts === 2 && word.audio)  {
             messages.push(richMessages.text(`Here's the final hint`));
-            messages.push(richMessages.audio(word.audio), [
+            messages.push(richMessages.audio(word.audio, [
                 richMessages.option(`I don't know`, `Skip`)
-            ]);
+            ]));
         }
 
         callback(messages);
@@ -163,7 +165,6 @@ function skipTest(word, callback) {
 }
 
 function handleTestIntent(user, intentRequest, callback) {
-    console.log("handleTestIntent: " + JSON.stringify(intentRequest));
     if (intentRequest.currentIntent.slots['Word']) {
         let lowercaseWord = intentRequest.currentIntent.slots['Word'].toLowerCase();
         let word = intentRequest.sessionAttributes.json ? JSON.parse(intentRequest.sessionAttributes.json) : {};
@@ -173,7 +174,7 @@ function handleTestIntent(user, intentRequest, callback) {
             if (word && word.word.toLowerCase() === lowercaseWord) {
                 correctAnswer(callback);
             } else {
-                wrongAnswer(word, callback, intentRequest);
+                wrongAnswer(word, intentRequest, callback);
             }
         }
     } else {
