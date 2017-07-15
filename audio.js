@@ -24,8 +24,6 @@ exports.download = function (url, extension) {
 exports.transcode = function (file) {
     return new Promise((resolve, reject) => {
         let tmpFileName = randomFileName('wav');
-        console.log(child_process.spawnSync('ls', ['-l', TaskRoot]).stdout.toString());
-        console.log(child_process.spawnSync('ls', ['-l', `${TaskRoot}/bin`]).stdout.toString());
         let result = child_process.spawnSync(`${TaskRoot}/bin/ffmpeg`, [
             '-i', file, '-ar', '8000', '-ac', '1', tmpFileName
         ]);
