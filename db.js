@@ -87,7 +87,7 @@ module.exports.getRandomTestWord = function (user) {
               INNER JOIN progress p
                 ON w.id = p.word_id
                    AND p.user_id = @userId
-            ORDER BY newid()`,
+            ORDER BY p.next_repeat`,
             {
                 userId: user.id
             }
