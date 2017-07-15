@@ -108,7 +108,7 @@ module.exports.recordProgress = function (userId, wordId) {
             let sql =
                 `BEGIN TRAN
                 UPDATE progress
-                SET repeat_count = repeat_count + 1, updated_at = GETUTCDATE()
+                SET repeat_count = repeat_count + 1, updated_at = GETUTCDATE(), next_repeat = DATEADD(WEEK, 2, GETUTCDATE())
                 WHERE user_id = @userId AND word_id = @wordId
                 IF @@rowcount = 0
                   BEGIN

@@ -172,7 +172,7 @@ function handleTestIntent(user, intentRequest, callback) {
             skipTest(word, callback);
         } else {
             if (word && word.word.toLowerCase() === lowercaseWord) {
-                correctAnswer(callback);
+                db.recordProgress(user.id, word.id).then(() => correctAnswer(callback));
             } else {
                 wrongAnswer(word, intentRequest, callback);
             }
