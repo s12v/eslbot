@@ -65,7 +65,10 @@ function sendMessageToLex(message) {
     if (attachments && attachments.some(isAudio)) {
         return lexApi.sendAudio(message.sender.id, attachments.find(isAudio).payload.url);
     } else if (message.message.text) {
-        return lexApi.sendText(message.sender.id, message.message.text);
+        let text = message.message.quick_reply && message.message.quick_reply.payload
+            ? message.message.quick_reply.payload
+            : message.message.text;
+        return lexApi.sendText(message.sender.id, text);
     }
 
     return Promise.reject('Unsupported message type');
