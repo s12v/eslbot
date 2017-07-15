@@ -87,7 +87,7 @@ function sendRichMessages(userId, messages) {
                         }
                     });
                 }
-                p = p.then(() => facebookApi.sendText(userId, rm.value, quickReplies));
+                p = p.then(() => facebookApi.sendText(userId, rm.text, quickReplies));
             } else if (rm.type === richMessages.Types.audio) {
                 p = p.then(() => facebookApi.sendAudio(userId, rm.url));
             } else if (rm.type === richMessages.Types.image) {
