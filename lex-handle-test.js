@@ -69,7 +69,9 @@ function wrongAnswer(word, intentRequest, callback) {
                         attempts: attempts
                     },
                     intentRequest.currentIntent.name,
-                    {},
+                    {
+                        Word: null
+                    },
                     'Word',
                     {
                         contentType: 'PlainText',
@@ -99,9 +101,10 @@ function buildMessagesForTestCard(word, intentRequest, attempts, callback) {
             });
     } else {
         if (intentRequest.inputTranscript) {
-            messages.push(richMessages.text(`Your input: ${intentRequest.inputTranscript}`));
+            messages.push(richMessages.text(`Your input: ${intentRequest.inputTranscript} is incorrect. Try again!`));
+        } else {
+            messages.push(richMessages.text(`I couldn't understand. Please, try again`));
         }
-        messages.push(richMessages.text('Incorrect. Try again!'));
 
         if (attempts === 1)  {
             messages.push(richMessages.text(`Here's a hint:`));
@@ -164,7 +167,7 @@ function skipTest(word, callback) {
 }
 
 function handleTestIntent(user, intentRequest, callback) {
-    if ('Words' in intentRequest.currentIntent.slots) {
+    if ('Word' in intentRequest.currentIntent.slots && 'json' in intentRequest.sessionAttributes) {
         let guess = intentRequest.currentIntent.slots['Word'];
         let lowercaseWord = guess ? guess.toLowerCase() : '';
         let word = intentRequest.sessionAttributes.json ? JSON.parse(intentRequest.sessionAttributes.json) : {};

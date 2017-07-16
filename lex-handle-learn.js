@@ -12,12 +12,25 @@ exports.handle = function (intentRequest, callback) {
         .then(user => {
                 console.log(`User found: ${JSON.stringify(user)}`);
                 if (user === null) {
-                    learnValidate(intentRequest, callback);
+                    return learnValidate(intentRequest, callback);
                 } else {
-                    learnFulfill(user, callback);
+                    return learnFulfill(user, callback);
                 }
             }
-        );
+        )
+        .catch(e => {
+            console.error(e);
+            callback(
+                lexResponses.close(
+                    {},
+                    'Fulfilled',
+                    {
+                        contentType: 'PlainText',
+                        content: 'Something went wrong. Please try again'
+                    }
+                )
+            )
+        });
 };
 
 function learnValidate(intentRequest, callback) {
@@ -94,6 +107,19 @@ function learnFulfill(user, callback) {
                     {
                         contentType: 'PlainText',
                         content: richMessages.json(buildMessagesForLearnCard(word))
+                    }
+                )
+            )
+        })
+        .catch(e => {
+            console.error(e);
+            callback(
+                lexResponses.close(
+                    {},
+                    'Fulfilled',
+                    {
+                        contentType: 'PlainText',
+                        content: 'Error occurred. Please try again'
                     }
                 )
             )

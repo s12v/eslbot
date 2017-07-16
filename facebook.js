@@ -119,6 +119,6 @@ function processMessage(message) {
         })
         .catch(err => {
             console.error(err);
-            facebookApi.sendText(message.sender.id, 'Error occurred, please try again');
+            facebookApi.sendText(message.sender.id, `Sorry, I didn't understand`);
         });
 }
