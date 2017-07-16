@@ -4,10 +4,9 @@ This bot helps you to learn new English words.
 
 https://user-images.githubusercontent.com/1462574/28089437-4b814196-6689-11e7-920e-f76acddda08b.png
 
-It's built with AWS Lex, Polly, API Gateway, S3, and Lambda.
+It's built with Node.js, AWS Lex, Polly, API Gateway, S3, and Lambda.
 Resources created and deployed with CloudFormation and [Serverless](https://serverless.com).
-Words search and user profiles stored in Azure SQL Database.
-The bot is connected to Facebook Messenger Platform.
+User profiles stored in Azure SQL Database. The bot is connected to Facebook Messenger Platform.
 
 Many thanks to [skyeng.ru](https://skyeng.ru) for providing public API and allowing to use data.
 

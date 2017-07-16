@@ -152,7 +152,9 @@ function wordData(row) {
             return {
                 id: row.id,
                 word: row.word,
+                prefix: data.prefix,
                 definition: data.definition.text,
+                examples: data.examples.map(e => e.text),
                 image: data.images && data.images.length > 0 ? `http:${data.images[0].url}` : null,
                 audio: data.soundUrl ? `http:${data.soundUrl}` : null
             };

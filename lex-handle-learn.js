@@ -51,20 +51,31 @@ function learnValidate(intentRequest, callback) {
 }
 
 function buildMessagesForLearnCard(word) {
-    let massages = [richMessages.text(`Study this word: ${word.word}`)];
+    let messages = [];
+
+    let w = word.prefix ? `${word.prefix} ${word.word}` : word.word;
+    messages.push(richMessages.text(w));
     if (word.audio) {
-        massages.push(richMessages.audio(word.audio))
+        messages.push(richMessages.audio(word.audio))
     }
     if (word.image) {
-        massages.push(richMessages.image(word.image))
+        messages.push(richMessages.image(word.image))
     }
-    massages.push(richMessages.text(`Definition: ${word.definition}`, [
+
+    messages.push(richMessages.text(`Definition: ${word.definition}`));
+
+    for (let i = 0; i < word.examples.length; i++) {
+        messages.push(richMessages.text(`Example ${i + 1}: ${word.examples[i]}`));
+    }
+
+    // Append options to the latest message
+    messages[messages.length - 1].options = [
         richMessages.option('Next word', 'Continue'),
         richMessages.option('Start test', 'Test'),
         richMessages.option('Stop lesson', 'Stop')
-    ]));
+    ];
 
-    return massages;
+    return messages;
 }
 
 function learnFulfill(user, callback) {
