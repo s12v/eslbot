@@ -57,7 +57,7 @@ function correctAnswer(callback) {
 }
 
 function wrongAnswer(word, intentRequest, callback) {
-    if (intentRequest.sessionAttributes.attempts >= 3) {
+    if (intentRequest.sessionAttributes.attempts >= 2) {
         skipTest(word, callback);
     } else {
         let attempts = parseInt(intentRequest.sessionAttributes.attempts) + 1;
@@ -69,7 +69,7 @@ function wrongAnswer(word, intentRequest, callback) {
                         attempts: attempts
                     },
                     intentRequest.currentIntent.name,
-                    intentRequest.currentIntent.slots,
+                    {},
                     'Word',
                     {
                         contentType: 'PlainText',
@@ -82,7 +82,6 @@ function wrongAnswer(word, intentRequest, callback) {
 }
 
 function buildMessagesForTestCard(word, intentRequest, attempts, callback) {
-    console.log(`buildMessagesForTestCard. word: ${word}, intentRequest: ${JSON.stringify(intentRequest)}, attempts: ${attempts}`);
     let messages = [];
 
     if (attempts === 0) {
@@ -165,8 +164,9 @@ function skipTest(word, callback) {
 }
 
 function handleTestIntent(user, intentRequest, callback) {
-    if (intentRequest.currentIntent.slots['Word']) {
-        let lowercaseWord = intentRequest.currentIntent.slots['Word'].toLowerCase();
+    if ('Words' in intentRequest.currentIntent.slots) {
+        let guess = intentRequest.currentIntent.slots['Word'];
+        let lowercaseWord = guess ? guess.toLowerCase() : '';
         let word = intentRequest.sessionAttributes.json ? JSON.parse(intentRequest.sessionAttributes.json) : {};
         if (lowercaseWord === 'skip' || lowercaseWord === `i don't know`) {
             skipTest(word, callback);
