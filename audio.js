@@ -25,7 +25,7 @@ exports.transcode = function (file) {
     return new Promise((resolve, reject) => {
         let tmpFileName = randomFileName('wav');
         let result = child_process.spawnSync(`${TaskRoot}/bin/ffmpeg`, [
-            '-i', file, '-ar', '16000', '-ac', '1', '-af', 'highpass=f=200, lowpass=f=3000', tmpFileName
+            '-i', file, '-ar', '16000', '-ac', '1', tmpFileName
         ]);
         if (result.error || result.status !== 0) {
             console.error(result.error);
