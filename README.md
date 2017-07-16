@@ -13,7 +13,7 @@ ESLBot is based on the following components:
  * Amazon API Gateway for providing a REST API for Facebook integration
  * FFmpeg to prepare audio for Lex
  * Amazon Polly to generate audio from text
- * Aazon S3 to cache generated speech
+ * Amazon S3 to cache generated speech
  * Azure SQL database to store user profiles and progress
  * Skyeng API as the data source
  * AWS CloudFormation and Serverless framework to orchestrate provisioning of AWS environment
