@@ -108,7 +108,7 @@ function buildMessagesForTestCard(word, intentRequest, attempts, callback) {
             });
     } else {
         if (intentRequest.inputTranscript) {
-            messages.push(richMessages.text(`Your input: ${intentRequest.inputTranscript} is incorrect. Try again!`));
+            messages.push(richMessages.text(`Your input "${intentRequest.inputTranscript}" is incorrect. Try again!`));
         } else {
             messages.push(richMessages.text(`I couldn't understand. Please, try again`));
         }
@@ -174,11 +174,16 @@ function skipTest(word, callback) {
 }
 
 function handleTestIntent(user, intentRequest, callback) {
-    if ('Word' in intentRequest.currentIntent.slots && 'json' in intentRequest.sessionAttributes) {
+    if (intentRequest
+        && intentRequest.currentIntent.slots
+        && 'Word' in intentRequest.currentIntent.slots
+        && intentRequest.sessionAttributes
+        && 'json' in intentRequest.sessionAttributes
+    ) {
         let guess = intentRequest.currentIntent.slots['Word'];
-        let lowercaseWord = guess ? guess.toLowerCase() : '';
+        let lowercaseWord = guess ? guess.toLowerCase().trim().replace(/^(to\s+|a\s+|an\s+)/, '') : '';
         let word = intentRequest.sessionAttributes.json ? JSON.parse(intentRequest.sessionAttributes.json) : {};
-        if (lowercaseWord === 'skip' || lowercaseWord === `i don't know`) {
+        if (lowercaseWord === `i don't know` || lowercaseWord === 'i do not know' || lowercaseWord === 'no idea') {
             skipTest(word, callback);
         } else {
             if (word && word.word.toLowerCase() === lowercaseWord) {
