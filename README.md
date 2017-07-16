@@ -4,7 +4,7 @@ This bot helps you to learn new English words.
 
 ## Architecture
 
-https://user-images.githubusercontent.com/1462574/28089437-4b814196-6689-11e7-920e-f76acddda08b.png
+![Serverless bot architecture](https://user-images.githubusercontent.com/1462574/28251667-60201698-6a82-11e7-8f72-12459e3d4ffd.png)
 
 ESLBot is based on the following components:
 
