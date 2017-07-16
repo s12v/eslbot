@@ -38,6 +38,13 @@ exports.handle = function (intentRequest, callback) {
 };
 
 function correctAnswer(callback) {
+    const replies = [
+        'Good!',
+        'Correct',
+        'Your answer is correct',
+        `That's right`
+    ];
+
     callback(
         lexResponses.close(
             {},
@@ -45,7 +52,7 @@ function correctAnswer(callback) {
             {
                 contentType: 'PlainText',
                 content: richMessages.json([
-                    richMessages.text('Good!', [
+                    richMessages.text(replies[Math.floor(Math.random() * replies.length)], [
                         richMessages.option('Next test', 'Test'),
                         richMessages.option('Learn', 'Learn'),
                         richMessages.option('Stop', 'Stop'),
