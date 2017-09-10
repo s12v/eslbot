@@ -4,6 +4,7 @@ const db = require('db');
 const lexResponses = require('lex-responses');
 const lexLearnHandler = require('lex-handle-learn');
 const lexTestHandler = require('lex-handle-test');
+const skyEngLoginHandler = require('skyeng-login');
 const richMessages = require('rich-messages');
 
 const BotName = process.env.BOT_NAME;
@@ -33,6 +34,8 @@ function dispatch(intentRequest, callback) {
         return lexLearnHandler.handle(intentRequest, callback);
     } else if (name === 'DictTest') {
         return lexTestHandler.handle(intentRequest, callback);
+    } else if (name === 'SkyEngLogin') {
+        return skyEngLoginHandler.handle(intentRequest, callback);
     }
     throw new Error(`Intent with name ${name} not supported`);
 }
@@ -69,7 +72,8 @@ function about(callback) {
 
     const messages = [];
     messages.push(richMessages.text(`Hi. I'm a bot. I can help you to learn new English words`));
-    messages.push(richMessages.text(`You can send me text or voice messages`));
+    messages.push(richMessages.text(`You can link your SkyEng account (beta)`));
+    messages.push(richMessages.text(`Send me text or voice messages`));
     messages.push(richMessages.text(`Say "start" to learn new words or "test" to test your skills`, [
         richMessages.option('Start', 'Start'),
         richMessages.option('Test', 'Test'),
